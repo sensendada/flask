@@ -1,3 +1,5 @@
+import datetime
+
 from flask import request,jsonify,current_app,make_response,session
 
 from . import passport_blue
@@ -109,14 +111,14 @@ def send_sms_code():
     except Exception as e:
         current_app.logger.error(e)
     # 比较图片验证码手机否一致，忽略大小写
-    if real_image_code.lower() != image_code_id:
+    if real_image_code.lower() != image_code.lower():
         return jsonify(errno=RET.DATAERR, errmsg='图片验证码不一致')
     # 判断 手机号是否可以注册
     try:
-        user = User.query.filter_by(moblie=mobile).first()
+        user = User.query.filter_by(mobile=mobile).first()
     except Exception as e:
         current_app.logger.error(e)
-        return jsonify(errno=RET.DBERR, errmsg='查询用户上数据时报')
+        return jsonify(errno=RET.DBERR, errmsg='查询用户数据失败')
     else:
         if user:
             return jsonify(errno=RET.DATAERR, errmsg='手机号已经注册了')
@@ -217,4 +219,72 @@ def register():
     session['mobile'] = mobile
     session['nick_name'] = mobile
     # 返回结果
+    return jsonify(errno=RET.OK,errmsg='OK')
+
+
+@passport_blue.route('/login', methods=['POST'])
+def login():
+    """
+    登陆
+    获取参数------检查参数------业务处理-----返回结果
+    1.获取参数，mobile，password
+    2.检查参数的完整性
+    3.检查手机号格式，可选
+    4.根据手机号查询用户是否注册
+    user=User.query.filter_by(mobile=mobile).first()
+    5.判断查询结果
+    6.判断密码是否正确
+    7.缓存用户信息
+    注册时缓存：session['nick_name'] = mobile
+    登陆时缓存：session['nicl_name'] = user.nick_name
+    8.返回结果
+
+    :return:
+    """
+
+    # 获取参数
+    mobile = request.json.get('mobile')
+    password = request.json.get('password')
+    # 检查参数的完整性
+    if not all([mobile, password]):
+        return jsonify(errno=RET.PARAMERR,errmsg='参数缺失')
+    # 检查手机号的格式
+    if not re.match(r'1[3456789]\d{9}$', mobile):
+        return jsonify(errno=RET.PARAMERR,errmsg='手机号格式错误')
+    # 根据手机号查询mysql，确认用户以注册
+    try:
+        user = User.query.filter_by(mobile=mobile).first()
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg='查询用户数据失败')
+
+    # 建议使用这种判断
+    if user is None or not user.check_password(password):
+        return jsonify(errno=RET.DATAERR,errmsg='用户名或密码错误')
+    # 记录用户的登陆时间
+    user.last_login = datetime.now()
+    # 提交数据到数据库
+    try:
+        db.session.add(user)
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+        db.session.rollback()
+
+        return jsonify(errno=RET.DBERR,errmsg='保存数据失败')
+    # 缓存用户信息
+    session['user_id'] = user.id
+    session['mobile'] = mobile
+    session['nick_name'] = user.nick_name
+    # 返回结果
+    return jsonify(errno=RET.OK,errmsg='OK')
+
+
+@passport_blue.route('/logout')
+def logout():
+    """退出登陆"""
+    # 本质就是清楚用户在服务器缓存的用户信息
+    session.pop('user_id', None)
+    session.pop('mobile', None)
+    session.pop('nick_name', None)
     return jsonify(errno=RET.OK,errmsg='OK')

@@ -93,7 +93,7 @@ $(function(){
 		$(this).find('a')[0].click()
 	})
 
-    // TODO 登录表单提交
+    // 登录表单提交
     $(".login_form_con").submit(function (e) {
         e.preventDefault()
         var mobile = $(".login_form #mobile").val()
@@ -110,6 +110,27 @@ $(function(){
         }
 
         // 发起登录请求
+        var params = {
+            'mobile':mobile,
+            'password':password
+        };
+        $.ajax({
+            url:'/login',
+            type:'post',
+            data:JSON.stringify(params),
+            contentType:'application/json',
+            headers:{
+                'X-CSRFToken':getCookie('csrf_token')
+            },
+            success:function (resp) {
+                if (resp.errno == '0'){
+                    location.reload()
+                }else{
+                    alert(resp.errmsg);
+                }
+            }
+        })
+
     })
 
 
@@ -154,6 +175,9 @@ $(function(){
             type:'post',
             data:JSON.stringify(params),
             contentType:'application/json',
+            headers:{
+                'X-CSRFToken':getCookie('csrf_token')
+            },
             success:function (resp) {
                 if (resp.errno == '0'){
                     location.reload()
@@ -210,6 +234,9 @@ function sendSMSCode() {
         type:'post',
         data:JSON.stringify(params),
         contentType:'application/json',
+        headers:{
+                'X-CSRFToken':getCookie('csrf_token')
+        },
         success:function (response) {
             if (response.errno == '0'){
                 var num = 60;
@@ -271,4 +298,12 @@ function generateUUID() {
         return (c=='x' ? r : (r&0x3|0x8)).toString(16);
     });
     return uuid;
+}
+
+
+// 退出登录
+function logout(){
+    $.get('/logout',function(resp){
+        location.reload()
+    })
 }
