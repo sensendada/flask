@@ -7,7 +7,7 @@ class Config:
     SECRET_KEY = 'cYaRoiV/yG7qq6L2/nPHKOgqGspSjkBDJ02iWrhQFJaz8002cI3GbjsZnP5tEV3vad8='
 
     # 配置mysql数据库的连接信息
-    SQLALCHEMY_DATABASE_URI = 'mysql://root:mysql@localhost/info14'
+    SQLALCHEMY_DATABASE_URI = 'mysql://root:180236@localhost/info14'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # 配置redis连接信息

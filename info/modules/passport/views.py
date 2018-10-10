@@ -86,7 +86,7 @@ def send_sms_code():
     # 从前端获取参数
     mobile = request.json.get('mobile')
     image_code = request.json.get('image_code')
-    image_code_id = request.jsonify.get('image_code_id')
+    image_code_id = request.json.get('image_code_id')
     # 检查参数的完整性
     if not all([mobile, image_code, image_code_id]):
         return jsonify(errno=RET.PARAMERR, errmsg='参数不完整')
@@ -109,7 +109,7 @@ def send_sms_code():
     except Exception as e:
         current_app.logger.error(e)
     # 比较图片验证码手机否一致，忽略大小写
-    if real_image_code.lower() != image_code_id():
+    if real_image_code.lower() != image_code_id:
         return jsonify(errno=RET.DATAERR, errmsg='图片验证码不一致')
     # 判断 手机号是否可以注册
     try:
@@ -144,3 +144,77 @@ def send_sms_code():
             return jsonify(errno=RET.THIRDERR, errmsg='发送失败')
 
 
+@passport_blue.route('/register', methods=['POST'])
+def register():
+    """
+    用户注册
+    1.获取参数，mobile, sms_code, password
+    2.检查参数完整性
+    3.检查手机号的格式
+    4.尝试从redis中获取真是的短信验证码
+    5.判断获取结果是否存在
+    6.先比较短信验证码是否正确
+    7.删除redis中存储的短信验证码
+    8.构造模型类对象，存储用户信息
+    9.提交数据到数据库中
+    10.缓存用户信息到redis数据库中
+    11.返回结果
+    :return:
+    """
+    # 获取参数
+    mobile = request.json.get('mobile')
+    sms_code = request.json.get('sms_code')
+    password = request.json.get('password')
+    # 检查参数的完整性
+    if not all([mobile, sms_code, password]):
+        return jsonify(errno=RET.PARAMERR, errmsg='参数缺失')
+    # 使用正则校验手机号格式
+    if not re.match(r'1[3456789]\d{9}$', mobile):
+        return jsonify(errno=RET.PARAMERR,errmsg='手机号格式错误')
+    # 从redis中获取真实的短信验证码
+    try:
+        real_sms_code = redis_store.get('SMSCode_' + mobile)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR,errmsg='获取数据失败')
+    # 判断获取结果是否存在
+    if not real_sms_code:
+        return jsonify(errno=RET.NODATA,errmsg='数据已过期')
+    # 比较短信验证码是否一致
+    if real_sms_code != str(sms_code):
+        return jsonify(errno=RET.DATAERR,errmsg='短信验证码不一致')
+    # 删除短信验证码
+    try:
+        redis_store.delete('SMSCode_' + mobile)
+    except Exception as e:
+        current_app.logger.error(e)
+    # 判断手机号是否以注册
+    try:
+        user = User.query.filter_by(mobile=mobile).first()
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR,errmsg='查询用户数据失败')
+    else:
+        if user:
+            return jsonify(errno=RET.DATAEXIST,errmsg='手机号已经注册')
+    # 保存用户信息
+    user = User()
+    user.mobile = mobile
+    user.nick_name=mobile
+    # 实际上调用了模型类中的password方法，实现密码加密储存，generate_password_hash
+    user.password = password
+    # 提交数据到mysql
+    try:
+        db.session.add(user)
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+        db.session.rollback()
+        return jsonify(errno=RET.DBERR,errmsg='保存数据失败')
+
+    # 缓存用户信息
+    session['user_id'] = user.id
+    session['mobile'] = mobile
+    session['nick_name'] = mobile
+    # 返回结果
+    return jsonify(errno=RET.OK,errmsg='OK')
