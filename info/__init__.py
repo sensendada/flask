@@ -29,6 +29,7 @@ redis_store = StrictRedis(host=Config.REDIS_HOST,port=Config.REDIS_PORT,decode_r
 # 先实例化sqlalchemy对象
 db = SQLAlchemy()
 
+
 # 定义工厂函数，让函数根据参数的不同，生产不同环境下的app，即开发模式下的app，或生产模式下的app
 def create_app(config_name):
 

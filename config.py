@@ -1,4 +1,6 @@
 from redis import StrictRedis
+
+
 class Config:
     DEBUG = None
     # 设置密钥
@@ -18,6 +20,7 @@ class Config:
     SESSION_USE_SIGNER = True # session签名
     PERMANENT_SESSION_LIFETIME = 86400 # session有效期
 
+
 # 实现开发模式下的配置信息
 class DevelopmentConfig(Config):
     DEBUG = True
@@ -30,6 +33,6 @@ class ProductionConfig(Config):
 
 # 定义字典，实现配置对象的映射
 config_dict = {
-    'development':DevelopmentConfig,
-    'production':ProductionConfig
+    'development': DevelopmentConfig,
+    'production': ProductionConfig
 }
