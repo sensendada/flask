@@ -116,12 +116,13 @@ def get_news_list():
     for news in news_list:
         news_dict_list.append(news.to_dict())
     data = {
-        'news_dict_list':news_dict_list,
-        'total_page':total_page,
-        'current_page':current_page
+        'news_dict_list': news_dict_list,
+        'total_page': total_page,
+        'current_page': current_page
     }
     # 返回数据
     return jsonify(errno=RET.OK,errmsg='OK', data=data)
+
 
 @news_blue.route('/<int:news_id>')
 @login_required
@@ -138,12 +139,12 @@ def get_news_detail(news_id):
     user = g.user
     # 新闻点击排行
     try:
-        news_list = News.query.order_by(News.clicks.desc().limit(constants.CLICK_RANK_MAX_NEWS))
+        news_list = News.query.order_by(News.clicks.desc()).limit(constants.CLICK_RANK_MAX_NEWS)
     except Exception as e:
         current_app.logger.error(e)
-        return jsonify(errno=RET.DBERR,errmsg='查询新闻排行数据失败')
+        return jsonify(errno=RET.DBERR, errmsg='查询新闻排行数据失败')
     if not news_list:
-        return jsonify(errno=RET.NODATA,errmsg='无新闻排行数据')
+        return jsonify(errno=RET.NODATA, errmsg='无新闻排行数据')
     news_click_list = []
     for news in news_list:
         news_click_list.append(news.to_dict())
@@ -153,21 +154,22 @@ def get_news_detail(news_id):
         news = News.query.get(news_id)
     except Exception as e:
         current_app.logger.error(e)
-        return jsonify(errno=RET.DBERR,errmsg='查询新闻详情数据失败')
+        return jsonify(errno=RET.DBERR, errmsg='查询新闻详情数据失败')
     if not news:
-        return jsonify(errno=RET.NODATA,errmsg='无新闻排行数据')
+        return jsonify(errno=RET.NODATA, errmsg='无新闻排行数据')
     # 收藏或取消收藏标记
     is_collected = False
     # 判断用户是否收藏过， 用户登录后才能显示新闻是否收藏过
     if news in g.user.collection_news:
         is_collected = True
     data = {
-        'user_info':user.to_dict() if user else None,
-        'news_click_list':news_click_list,
-        'news_detail':news.to_dict(),
-        'is_collected':is_collected
+        'user_info': user.to_dict() if user else None,
+        'news_click_list': news_click_list,
+        'news_detail': news.to_dict(),
+        'is_collected': is_collected
     }
-    return render_template('news/detail.html', data = data)
+    return render_template('news/detail.html', data=data)
+
 
 # 项目favicon.ico文件的加载
 @news_blue.route('/favicon.ico')
