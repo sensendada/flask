@@ -302,8 +302,14 @@ function generateUUID() {
 
 
 // 退出登录
-function logout(){
-    $.get('/logout',function(resp){
+// function logout(){
+//     $.get('/logout',function(resp){
+//         location.reload()
+//     })
+// }
+function logout() {
+    $.get('/logout', function (resp) {
         location.reload()
+
     })
 }

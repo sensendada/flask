@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 
 from flask import request,jsonify,current_app,make_response,session
 
@@ -288,3 +288,4 @@ def logout():
     session.pop('mobile', None)
     session.pop('nick_name', None)
     return jsonify(errno=RET.OK,errmsg='OK')
+

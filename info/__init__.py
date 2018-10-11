@@ -38,7 +38,9 @@ def create_app(config_name):
     # 让sqlalchemy对象通过函数调用，实现和程序实例app进行关联
     db.init_app(app)
     Session(app)
-
+    # 自定义过滤器
+    from info.utils.commons import index_filter
+    app.add_template_filter(index_filter, 'index_filter')
     # 导入蓝图对象，注册蓝图对象
     from info.modules.news import news_blue
     app.register_blueprint(news_blue)
